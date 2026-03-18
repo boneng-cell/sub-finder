@@ -65,10 +65,9 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y jq curl
-
         go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
         go install github.com/tomnomnom/assetfinder@latest
-        GO111MODULE=on go install github.com/owasp/amass/v3/...@latest
+        GO111MODULE=on go install github.com/owasp-amass/amass/v3/...@latest
         go install github.com/projectdiscovery/chaos-client/cmd/chaos@latest
 
     # Run subdomain enumeration script
