@@ -1,28 +1,23 @@
 name: Subdomain Recon
-
 on:
   workflow_dispatch:
     inputs:
       domain:
         description: "Target domain"
         required: true
-
+      pd_api_key:
+        description: "ProjectDiscovery API Key"
+        required: true
 jobs:
   recon:
     runs-on: ubuntu-latest
-
     steps:
-    # Checkout repo
     - name: Checkout
       uses: actions/checkout@v3
-
-    # Setup Python
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-
-    # Cache pip deps
     - name: Cache Python deps
       uses: actions/cache@v3
       with:
@@ -30,17 +25,12 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-
     - name: Install Python deps
       run: pip install -r requirements.txt
-
-    # Setup Go
     - name: Setup Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.26'
-
-    # Cache Go Modules
     - name: Cache Go Modules
       uses: actions/cache@v3
       with:
@@ -48,19 +38,13 @@ jobs:
           ~/.cache/go-build
           ~/go/pkg/mod
         key: ${{ runner.os }}-go-mod
-
-    # Cache Go Bin
     - name: Cache Go Bin
       uses: actions/cache@v3
       with:
         path: ~/go/bin
         key: ${{ runner.os }}-go-bin
-
-    # Add Go bin to PATH
     - name: Add Go bin to PATH
       run: echo "$HOME/go/bin" >> $GITHUB_PATH
-
-    # Install dependencies and subdomain tools
     - name: Install Tools
       run: |
         sudo apt-get update
@@ -69,15 +53,9 @@ jobs:
         go install github.com/tomnomnom/assetfinder@latest
         GO111MODULE=on go install github.com/owasp-amass/amass/v3/...@latest
         go install github.com/projectdiscovery/chaos-client/cmd/chaos@latest
-
-    # Run subdomain enumeration script
     - name: Run Subdomain Script
-      env:
-        PD_API_KEY: ${{ secrets.PD_API_KEY }}
       run: |
-        python3 subs.py ${{ github.event.inputs.domain }}
-
-    # Upload artifact (use v4 since v3 is deprecated)
+        python3 subs.py "${{ github.event.inputs.domain }}" "${{ github.event.inputs.pd_api_key }}"
     - name: Upload Result
       uses: actions/upload-artifact@v4
       with:
