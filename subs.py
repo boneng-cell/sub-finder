@@ -5,11 +5,7 @@ import sys
 import os
 
 domain = sys.argv[1]
-api_key = os.getenv("PD_API_KEY")
-if not api_key:
-    print("[!] No API key set, skipping Chaos")
-else:
-    os.environ["PD_API_KEY"] = api_key
+api_key = sys.argv[2] if len(sys.argv) > 2 else None
 
 results = set()
 def run(cmd):
@@ -23,6 +19,7 @@ results.update(run(f"subfinder -d {domain} -silent"))
 results.update(run(f"assetfinder --subs-only {domain}"))
 results.update(run(f"amass enum -passive -d {domain}"))
 if api_key:
+    os.environ["PD_API_KEY"] = api_key
     results.update(run(f"chaos -d {domain} -silent"))
 try:
     url = f"https://crt.sh/?q=%25.{domain}&output=json"
