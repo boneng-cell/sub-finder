@@ -1,0 +1,73 @@
+name: Subdomain + HTTPx Scan
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Target domain"
+        required: true
+        type: string
+      pd_api_key:
+        description: "ProjectDiscovery API Key"
+        required: true
+        type: string
+jobs:
+  recon-httpx:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Cache Python deps
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install Python deps
+      run: pip install -r requirements.txt
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-mod
+    - name: Cache Go binaries
+      uses: actions/cache@v4
+      with:
+        path: ~/go/bin
+        key: ${{ runner.os }}-go-bin
+    - name: Add Go bin to PATH
+      run: echo "$HOME/go/bin" >> $GITHUB_PATH
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq curl
+        go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+        go install github.com/tomnomnom/assetfinder@latest
+        go install github.com/owasp-amass/amass/v3/...@master
+        go install github.com/projectdiscovery/chaos-client/cmd/chaos@latest
+        go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+    - name: Run scan
+      env:
+        PD_API_KEY: ${{ github.event.inputs.pd_api_key }}
+      run: python3 sub_scan.py "${{ github.event.inputs.domain }}"
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: results-${{ github.event.inputs.domain }}
+        path: |
+          all_subs.txt
+          200.txt
+          300.txt
+          400.txt
+          500.txt
+        retention-days: 30
