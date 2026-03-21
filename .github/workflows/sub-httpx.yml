@@ -63,9 +63,5 @@ jobs:
       with:
         name: results-${{ github.event.inputs.domain }}
         path: |
-          all_subs.txt
-          200.txt
-          300.txt
-          400.txt
-          500.txt
+          ${{ github.event.inputs.domain }}/*.txt
         retention-days: 30
