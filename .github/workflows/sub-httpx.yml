@@ -16,10 +16,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        
     - name: Cache Python deps
       uses: actions/cache@v4
       with:
@@ -27,37 +29,68 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+          
     - name: Install Python deps
       run: pip install -r requirements.txt
+      
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
+        
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-mod
-    - name: Cache Go binaries
-      uses: actions/cache@v4
+        key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-mod-
+          
+    - name: Install subfinder
+      uses: projectileman/actions-install-tool@v1
       with:
-        path: ~/go/bin
-        key: ${{ runner.os }}-go-bin
+        tool: subfinder
+        repo: projectdiscovery/subfinder
+        version: latest
+        
+    - name: Install assetfinder
+      uses: projectileman/actions-install-tool@v1
+      with:
+        tool: assetfinder
+        repo: tomnomnom/assetfinder
+        version: latest
+        
+    - name: Install amass
+      uses: projectileman/actions-install-tool@v1
+      with:
+        tool: amass
+        repo: owasp-amass/amass
+        version: latest
+        
+    - name: Install chaos
+      uses: projectileman/actions-install-tool@v1
+      with:
+        tool: chaos
+        repo: projectdiscovery/chaos-client
+        version: latest
+        
+    - name: Install httpx
+      uses: projectileman/actions-install-tool@v1
+      with:
+        tool: httpx
+        repo: projectdiscovery/httpx
+        version: latest
+        
     - name: Add Go bin to PATH
       run: echo "$HOME/go/bin" >> $GITHUB_PATH
-    - name: Install tools
-      run: |
-        go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-        go install github.com/tomnomnom/assetfinder@latest
-        go install github.com/owasp-amass/amass/v3/...@master
-        go install github.com/projectdiscovery/chaos-client/cmd/chaos@latest
-        go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+      
     - name: Run scan
       env:
         PD_API_KEY: ${{ github.event.inputs.pd_api_key }}
       run: python3 sub_scan.py "${{ github.event.inputs.domain }}"
+      
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
